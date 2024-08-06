@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Backtesting</h1>
+
+<div class="row">
+    <!-- Left column: Chat and controls -->
+    <div class="col-md-4">
+        <!-- Dropdown menus -->
+        <div class="mb-3">
+            <select id="instrument-select" class="form-select mb-2">
+                <option selected>Select Trading Instrument</option>
+                <option value="BTC">Bitcoin</option>
+                <option value="ETH">Ethereum</option>
+                <option value="ADA">Cardano</option>
+            </select>
+            <select id="timeframe-select" class="form-select">
+                <option selected>Select Time Frame</option>
+                <option value="1h">1 Hour</option>
+                <option value="4h">4 Hours</option>
+                <option value="1d">1 Day</option>
+            </select>
+        </div>
+
+        <!-- Chatbox -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Chat with LLM</h5>
+                <div id="chat-messages" style="height: 300px; overflow-y: auto;" class="mb-2">
+                    <!-- Chat messages will be appended here -->
+                </div>
+                <form id="chat-form">
+                    <div class="input-group">
+                        <textarea id="chat-input" class="form-control" placeholder="Type your message..." rows="1"></textarea>
+                        <button class="btn btn-primary" type="submit">Send</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Create Strategy Button -->
+        <button class="btn btn-success mb-3 w-100" onclick="createStrategy()">Create Strategy</button>
+
+        <!-- Strategy Selector -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Strategy Selector</h5>
+                <select id="strategy-select" class="form-select mb-2">
+                    <option selected>Select Strategy</option>
+                    <option value="strategy1">Strategy 1</option>
+                    <option value="strategy2">Strategy 2</option>
+                </select>
+                <button class="btn btn-danger btn-sm" onclick="deleteStrategy()">Delete Strategy</button>
+            </div>
+        </div>
+
+        <!-- Backtest Button -->
+        <button class="btn btn-primary mb-3 w-100" onclick="startBacktest()">Backtest!</button>
+    </div>
+
+    <!-- Right column: Output and results -->
+    <div class="col-md-8">
+
+
+        <!-- Chart Component -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Performance Chart</h5>
+                <div id="chart-container" style="height: 300px;">
+                    <!-- Chart will be rendered here -->
+                    <p class="text-muted">Chart placeholder</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table Component -->
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Results Table</h5>
+                <div id="table-container">
+                    <!-- Table will be rendered here -->
+                    <p class="text-muted">Table placeholder</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Output Window -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">System Output</h5>
+                <div id="system-output" style="height: 200px; overflow-y: auto;">
+                    <!-- System messages will be appended here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function sendMessage() {
+        var input = document.getElementById('chat-input');
+        var message = input.value;
+        if (message.trim() !== '') {
+            var chatMessages = document.getElementById('chat-messages');
+            chatMessages.innerHTML += '<p><strong>You:</strong> ' + message + '</p>';
+            input.value = '';
+            // Here you would typically send the message to your backend/LLM
+        }
+    }
+
+    function deleteStrategy() {
+        var select = document.getElementById('strategy-select');
+        var selectedStrategy = select.options[select.selectedIndex].text;
+        if (selectedStrategy !== 'Select Strategy') {
+            if (confirm('Are you sure you want to delete ' + selectedStrategy + '?')) {
+                select.remove(select.selectedIndex);
+                addSystemMessage('Strategy "' + selectedStrategy + '" deleted.');
+            }
+        }
+    }
+
+    function createStrategy() {
+        addSystemMessage('Creating new strategy based on chat discussion...');
+        // Here you would typically interact with your backend/LLM to create a strategy
+    }
+
+    function startBacktest() {
+        var instrument = document.getElementById('instrument-select').value;
+        var timeframe = document.getElementById('timeframe-select').value;
+        var strategy = document.getElementById('strategy-select').value;
+        
+        if (instrument !== 'Select Trading Instrument' && timeframe !== 'Select Time Frame' && strategy !== 'Select Strategy') {
+            addSystemMessage('Starting backtest for ' + instrument + ' on ' + timeframe + ' timeframe using ' + strategy + '...');
+            // Here you would typically start the actual backtesting process
+        } else {
+            addSystemMessage('Please select an instrument, timeframe, and strategy before starting the backtest.');
+        }
+    }
+
+    function addSystemMessage(message) {
+        var systemOutput = document.getElementById('system-output');
+        systemOutput.innerHTML += '<p>' + message + '</p>';
+        systemOutput.scrollTop = systemOutput.scrollHeight;
+    }
+</script>
+{% endblock %}
