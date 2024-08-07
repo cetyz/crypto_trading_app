@@ -1,6 +1,6 @@
 from typing import Dict, List
 import os
-from flask import Flask, render_template, request, jsonify, Response, stream_with_context
+from flask import Flask, render_template, request, jsonify, Response, stream_with_context, session
 from dotenv import load_dotenv
 from openai import OpenAI
 from tenacity import retry, wait_random_exponential, stop_after_attempt
@@ -9,13 +9,15 @@ from tenacity import retry, wait_random_exponential, stop_after_attempt
 load_dotenv()
 
 app = Flask(__name__)
+app.secret_key = os.getenv("FLASK_SECRET_KEY")
 
-GPT_MODEL = 'gpt-3.5-turbo'
-STREAM = True  # Changed to True for streaming functionality
+GPT_MODEL = 'gpt-4o-mini'
+STREAM = True
 
 # Initialize the OpenAI client once
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+# Retry decorator for API calls to handle temporary failures
 @retry(wait=wait_random_exponential(multiplier=1, max=40), stop=stop_after_attempt(3))
 def chat_completion_request(messages: List[Dict], tools: List[Dict] = None, tool_choice: str = None, model: str = GPT_MODEL, stream: bool = STREAM):
     try:
@@ -51,35 +53,64 @@ class Agent:
         self.memory.append(memory_content)
 
     def invoke(self, message: str):
+        # Add user message to memory and make API call
         self.append_to_memory({'role': 'user', 'content': message})
         return chat_completion_request(messages=self.memory, tools=self.tools, model=self.model, stream=STREAM)
 
     def _handle_stream_response(self, response) -> str:
+        # Process streaming response from API
         final_response = ""
         for chunk in response:
             if hasattr(chunk.choices[0].delta, 'content'):
                 chunk_content = chunk.choices[0].delta.content
                 if chunk_content is not None:
                     final_response += chunk_content
-                    yield f"data: {chunk_content}\n\n"
-            # Placeholder for handling tool calls in streaming response
+                    yield f"data: {chunk_content}\n\n" # Format for server-sent events
+            # TODO: Implement tool calls handling for streaming responses
             elif hasattr(chunk.choices[0].delta, 'tool_calls'):
                 print("Tool call detected in stream response:", chunk.choices[0].delta.tool_calls)
+        # Add complete response to agent's memory
         self.append_to_memory({'role': 'assistant', 'content': final_response})
-        yield "data: [DONE]\n\n"
+        yield "data: [DONE]\n\n" # Signal end of stream
 
     def _handle_non_stream_response(self, response) -> str:
+        # Process non-streaming response from API
         if response.choices[0].finish_reason == 'stop':
             chat_response_message = response.choices[0].message.content
             self.append_to_memory({'role': 'assistant', 'content': chat_response_message})
             return chat_response_message
         elif response.choices[0].finish_reason == 'tool_calls':
-            # Handle tool calls if necessary
+            # TODO: Implement tool calls handling for non-streaming responses
             print("Tool call detected in non-stream response:", response.choices[0].message.tool_calls)
             return "Tool call detected. This functionality is not yet implemented."
+        
+    def to_dict(self):
+        # Serialize agent state for session storage
+        return {
+            'model': self.model,
+            'memory': self.memory,
+            'tools': self.tools            
+        }
+    
+    @classmethod
+    def from_dict(cls, data):
+        # Deserialize agent state from session storage
+        agent = cls(model=data['model'])
+        agent.memory = data['memory']
+        agent.tools = data['tools']
+        return agent        
 
-# Initialize the Agent
-agent = Agent(system_prompt={"role": "system", "content": "You are a helpful assistant for crypto trading strategies."})
+def get_agent():
+    # Retrieve or create agent from session data
+    if 'agent_data' not in session:
+        agent = Agent(system_prompt={"role": "system", "content": "You are a helpful assistant for crypto trading strategies."})
+        session['agent_data'] = agent.to_dict()
+    else:
+        agent = Agent.from_dict(session['agent_data'])
+    return agent
+
+# # Initialize the Agent
+# agent = Agent(system_prompt={"role": "system", "content": "You are a helpful assistant for crypto trading strategies."})
 
 @app.route('/')
 def index():
@@ -98,13 +129,25 @@ def chat():
     data = request.json
     user_message = data.get('message')
     
-    # Use the Agent to process the message
+    agent = get_agent()
     response = agent.invoke(user_message)
     
+    # Persist updated agent state in session
+    session['agent_data'] = agent.to_dict()
+    
     if STREAM:
+        # Return streaming response
         return Response(stream_with_context(agent._handle_stream_response(response)), content_type='text/event-stream')
     else:
+        # Return non-streaming response
         return jsonify({"response": agent._handle_non_stream_response(response)})
+    
+@app.route('/clear_memory', methods=['POST'])
+def clear_memory():
+    # Remove agent data from session, effectively clearing its memory
+    if 'agent_data' in session:
+        del session['agent_data']
+    return jsonify({"message": "Memory cleared successfully"})
 
 if __name__ == '__main__':
     app.run(debug=True)
