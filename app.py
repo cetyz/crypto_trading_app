@@ -109,8 +109,6 @@ def get_agent():
         agent = Agent.from_dict(session['agent_data'])
     return agent
 
-# # Initialize the Agent
-# agent = Agent(system_prompt={"role": "system", "content": "You are a helpful assistant for crypto trading strategies."})
 
 @app.route('/')
 def index():
