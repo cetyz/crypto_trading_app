@@ -7,19 +7,22 @@
     <!-- Left column: Chat and controls -->
     <div class="col-md-4">
         <!-- Dropdown menus -->
-        <div class="mb-3">
-            <select id="instrument-select" class="form-select mb-2">
-                <option selected>Select Trading Instrument</option>
-                <option value="BTC">Bitcoin</option>
-                <option value="ETH">Ethereum</option>
-                <option value="ADA">Cardano</option>
-            </select>
-            <select id="timeframe-select" class="form-select">
-                <option selected>Select Time Frame</option>
-                <option value="1h">1 Hour</option>
-                <option value="4h">4 Hours</option>
-                <option value="1d">1 Day</option>
-            </select>
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <label for="instrument-select" class="form-label">Select Trading Instrument</label>
+                <select id="instrument-select" class="form-select">
+                    <option value="BTC/USD">BTC/USD</option>
+                    <option value="ETH/USD">ETH/USD</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="timeframe-select" class="form-label">Select Time Frame</label>
+                <select id="timeframe-select" class="form-select">
+                    <option value="1h">1 Hour</option>
+                    <option value="4h">4 Hours</option>
+                    <option value="1d">1 Day</option>
+                </select>
+            </div>
         </div>
 
         <!-- Chatbox -->

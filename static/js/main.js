@@ -4,6 +4,36 @@ document.addEventListener('DOMContentLoaded', function() {
     const chatInput = document.getElementById('chat-input');
     const chatForm = document.getElementById('chat-form');
     const clearMemoryButton = document.getElementById('clear-memory');
+    const instrumentSelect = document.getElementById('instrument-select');
+    const timeframeSelect = document.getElementById('timeframe-select');
+
+    function updateBacktestingParameters() {
+        const instrument = instrumentSelect.value;
+        const timeframe = timeframeSelect.value;
+        
+        fetch('/set_backtest_params', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({instrument: instrument, timeframe: timeframe}),
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data.message);
+            // You can add more logic here, like updating UI elements
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+    }
+
+    instrumentSelect.addEventListener('change', updateBacktestingParameters);
+    timeframeSelect.addEventListener('change', updateBacktestingParameters);
+
+    // Initial call to set up any necessary state
+    updateBacktestingParameters();
+
 
     /// Function to dynamically adjust textarea height based on content
     function adjustTextareaHeight() {

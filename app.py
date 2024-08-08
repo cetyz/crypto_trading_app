@@ -147,5 +147,17 @@ def clear_memory():
         del session['agent_data']
     return jsonify({"message": "Memory cleared successfully"})
 
+@app.route('/set_backtest_params', methods=['POST'])
+def set_backtest_params():
+    data = request.json
+    instrument = data.get('instrument')
+    timeframe = data.get('timeframe')
+    
+    # Store selections in the session
+    session['backtest_instrument'] = instrument
+    session['backtest_timeframe'] = timeframe
+    
+    return jsonify({"status": "success", "message": "Backtest parameters set successfully"})
+
 if __name__ == '__main__':
     app.run(debug=True)
