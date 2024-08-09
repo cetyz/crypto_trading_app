@@ -25,11 +25,14 @@
             </div>
         </div>
 
+        <!-- Backtest button -->
+        <button id="run-backtest-button" class="btn btn-success mb-3">Run Backtest</button>
+
         <!-- Chatbox -->
         <div class="card mb-3">
             <div class="card-body">
                 <h5 class="card-title">Chat with LLM</h5>
-                <div id="chat-messages" style="height: 300px; overflow-y: auto;" class="mb-2">
+                <div id="chat-messages" style="height: 400px; overflow-y: auto;" class="mb-2">
                     <!-- Chat messages will be appended here -->
                 </div>
                 <form id="chat-form">
@@ -43,22 +46,11 @@
 
         <!-- Create Clear Memory Button -->
         <button id="clear-memory" class="btn btn-warning mb-2">Clear Memory</button>
+        <button id="create-strategy-button" class="btn btn-primary mb-2">Create Strategy</button>
+    </div>
 
-        <!-- Strategy creation and display -->
-        <div class="card mb-3">
-            <div class="card-body">
-                <h5 class="card-title">Strategy</h5>
-                <button id="create-strategy-button" class="btn btn-primary mb-3">Create Strategy</button>
-                <div class="mb-3">
-                    <h6>Strategy Summary:</h6>
-                    <div id="strategy-display" class="border p-2" style="min-height: 100px;"></div>
-                </div>
-                <div>
-                    <h6>Strategy JSON:</h6>
-                    <pre id="json-display" class="border p-2" style="max-height: 300px; overflow-y: auto;"></pre>
-                </div>
-            </div>
-        </div>
+    <!-- Middle column: Strategy Details -->
+    <div class="col-md-4">
 
         <!-- Strategy selector -->
         <div class="card mb-3">
@@ -71,12 +63,28 @@
             </div>
         </div>
 
-        <!-- Backtest button -->
-        <button id="run-backtest-button" class="btn btn-success mb-3">Run Backtest</button>
+        <!-- Strategy creation and display -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Strategy</h5>
+                <div class="mb-3">
+                    <h6>Strategy Summary:</h6>
+                    <div id="strategy-display" class="border p-2" style="height: 270px; overflow-y: auto;"></div>
+                </div>
+                <div>
+                    <h6>Strategy JSON:</h6>
+                    <pre id="json-display" class="border p-2" style="max-height: 170px; overflow-y: auto;"></pre>
+                </div>
+            </div>
+        </div>
+
+
+
+
     </div>
 
     <!-- Right column: Output and results -->
-    <div class="col-md-8">
+    <div class="col-md-4">
 
 
         <!-- Chart Component -->
@@ -105,7 +113,7 @@
         <div class="card mb-3">
             <div class="card-body">
                 <h5 class="card-title">System Output</h5>
-                <div id="system-output" style="height: 200px; overflow-y: auto;">
+                <div id="system-output" style="height: 160px; overflow-y: auto;">
                     <!-- System messages will be appended here -->
                 </div>
             </div>
