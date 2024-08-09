@@ -12,7 +12,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const strategySelector = document.getElementById('strategy-selector');
     const deleteStrategyButton = document.getElementById('delete-strategy-button');
 
-    let strategies = [];
+    // Configure marked options
+    marked.setOptions({
+        breaks: true, // Interpret line breaks as <br>
+        gfm: true,    // Use GitHub Flavored Markdown
+    });
+
+    function parseAndSanitizeMarkdown(content) {
+        const rawHtml = marked.parse(content);
+        return DOMPurify.sanitize(rawHtml);
+    }
 
     function updateBacktestingParameters() {
         const instrument = instrumentSelect.value;
@@ -79,11 +88,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Add a message to the chat interface
     function addMessage(sender, message) {
+        const parsedContent = parseAndSanitizeMarkdown(message);
         const messageElement = document.createElement('div');
-        // Replace newlines with <br> tags for proper display
-        messageElement.innerHTML = `<strong>${sender}:</strong> ${message.replace(/\n/g, '<br>')}`;
+        messageElement.innerHTML = `<strong>${sender}:</strong> ${parsedContent}`;
         chatMessages.appendChild(messageElement);
-        // Scroll to the bottom of the chat
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
@@ -249,7 +257,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function displayStrategy(strategy) {
-        strategyDisplay.textContent = strategy.summary;
+        strategyDisplay.innerHTML = parseAndSanitizeMarkdown(strategy.summary);
         jsonDisplay.textContent = JSON.stringify(JSON.parse(strategy.json), null, 2);
     }
 
@@ -293,4 +301,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize the textarea height
     adjustTextareaHeight();
+
+    // Initialize chat functionality
+    initializeChat();
 });
+
+function initializeChat() {
+    // Your chat initialization code here
+    // For example, attaching event listeners to the chat form
+    document.getElementById('chat-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const message = document.getElementById('chat-input').value;
+        if (message.trim()) {
+            addMessage('User', message);
+            // Send message to backend, etc.
+        }
+    });
+}

@@ -41,3 +41,49 @@ p {
     color: #ffffff !important;
     font-weight: bold;
 }
+
+pre {
+    background-color: #f4f4f4;
+    border: 1px solid #ddd;
+    border-left: 3px solid #f36d33;
+    color: #666;
+    page-break-inside: avoid;
+    font-family: monospace;
+    font-size: 15px;
+    line-height: 1.6;
+    margin-bottom: 1.6em;
+    max-width: 100%;
+    overflow: auto;
+    padding: 1em 1.5em;
+    display: block;
+    word-wrap: break-word;
+}
+
+code {
+    background-color: #f4f4f4;
+    border-radius: 3px;
+    color: #666;
+    font-family: monospace;
+    padding: 0.2em 0.4em;
+}
+
+#chat-messages p {
+    margin-bottom: 0.5em;
+}
+
+#chat-messages ul, #chat-messages ol {
+    margin-left: 1.5em;
+}
+
+#chat-messages code {
+    background-color: #f0f0f0;
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+
+#chat-messages pre {
+    background-color: #f0f0f0;
+    padding: 10px;
+    border-radius: 4px;
+    overflow-x: auto;
+}
