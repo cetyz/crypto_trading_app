@@ -491,5 +491,12 @@ def delete_strategy():
     save_user_strategies(strategies)
     return jsonify({"message": "Strategy deleted successfully", "strategies": strategies})
 
+@app.route('/check_strategy_name', methods=['POST'])
+def check_strategy_name():
+    name = request.json.get('name')
+    strategies = load_user_strategies()
+    exists = any(strategy['name'] == name for strategy in strategies)
+    return jsonify({"exists": exists})
+
 if __name__ == '__main__':
     app.run(debug=True)

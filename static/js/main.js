@@ -157,7 +157,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     createStrategyButton.addEventListener('click', function() {
         const chatHistory = Array.from(chatMessages.children).map(msg => msg.textContent).join('\n');
-
+    
         fetch('/generate_strategy', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -165,22 +165,60 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(response => response.json())
         .then(data => {
-            const newStrategy = {
-                name: `Strategy ${Date.now()}`,  // Use timestamp for unique names
-                summary: data.strategy_summary,
-                json: data.strategy_json
-            };
-
-            fetch('/save_strategy', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newStrategy),
+            const strategyJson = JSON.parse(data.strategy_json);
+            let strategyName = strategyJson.strategy_name;
+            
+            // Function to check if a strategy name already exists
+            function strategyNameExists(name) {
+                return fetch('/check_strategy_name', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: name }),
+                })
+                .then(response => response.json())
+                .then(result => result.exists);
+            }
+    
+            // Function to get a unique strategy name
+            function getUniqueStrategyName(baseName) {
+                let nameCounter = 1;
+                let currentName = baseName;
+                
+                return new Promise((resolve) => {
+                    function checkName() {
+                        strategyNameExists(currentName).then(exists => {
+                            if (!exists) {
+                                resolve(currentName);
+                            } else {
+                                currentName = `${baseName} (${nameCounter})`;
+                                nameCounter++;
+                                checkName();
+                            }
+                        });
+                    }
+                    checkName();
+                });
+            }
+    
+            // Get a unique strategy name and then save the strategy
+            getUniqueStrategyName(strategyName).then(uniqueName => {
+                const newStrategy = {
+                    name: uniqueName,
+                    summary: data.strategy_summary,
+                    json: data.strategy_json
+                };
+    
+                return fetch('/save_strategy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newStrategy),
+                });
             })
             .then(response => response.json())
             .then(result => {
                 updateStrategySelector(result.strategies);
-                strategySelector.value = newStrategy.name;
-                displayStrategy(newStrategy);
+                strategySelector.value = result.strategies[result.strategies.length - 1].name;
+                displayStrategy(result.strategies[result.strategies.length - 1]);
             })
             .catch(error => console.error('Error saving strategy:', error));
         })
