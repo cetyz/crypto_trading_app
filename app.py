@@ -1,5 +1,6 @@
 from typing import Dict, List
 import os
+import json
 from flask import Flask, render_template, request, jsonify, Response, stream_with_context, session
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -10,6 +11,9 @@ load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY")
+
+STRATEGIES_DIR = 'user_strategies'
+os.makedirs(STRATEGIES_DIR, exist_ok=True)
 
 GPT_MODEL = 'gpt-4o-mini'
 STREAM = True
@@ -109,6 +113,289 @@ def get_agent():
         agent = Agent.from_dict(session['agent_data'])
     return agent
 
+def summarize_strategy(chat_history):
+    response = client.chat.completions.create(
+        model=GPT_MODEL,
+        messages=[
+            {"role": "system", "content": "You are a Strategy Summarizer Agent. Your task is to analyze the chat history and extract a clear, concise summary of the trading strategy discussed. Your summary should include the following: 1. Entry Condition 2. Exit Condition 3. Position Sizing 4. Stop Loss Condition 5. Take Profit Condition \n\n"},
+            {"role": "user", "content": f"Summarize the trading strategy from this chat history:\n\n{chat_history}"}
+        ]
+    )
+    return response.choices[0].message.content
+
+def generate_strategy_json(strategy_summary):
+    response = client.chat.completions.create(
+        model=GPT_MODEL,
+        messages=[
+            {"role": "system", "content": """You are an expert in creating trading strategies. Your task is to convert the provided strategy summary into a structured JSON representation.
+             Example strategy summary:
+             Strategy Name: Simple Moving Average Crossover Strategy
+             Strategy Summary: Using a fast period of 10, and slow period of 50, entry condition is when the fast SMA crosses over the slow SMA. Exit condition is when fast SMA crosses below the slow SMA. Use a fixed position size of 100. Stop loss will be 2 percent below entry price. Take profit will be 5 percent above entry price.
+             
+             Example output (not perfect formatting, just to convey the example):
+             strategy_name: Simple Moving Average Crossover Strategy
+
+             entry_condition: {
+             indicator: SMA,
+             parameter_1: {
+             name: fast_period,
+             value: 10
+             },
+             parameter_2: {
+             name: slow_period,
+             value: 50
+             },
+             parameter_3: {
+             name: N/A,
+             value: 0
+             },
+             condition: fast SMA crosses above slow SMA
+             }
+             
+             exit_condition: {
+             indicator: SMA,
+             parameter_1: {
+             name: fast_period,
+             value: 10
+             },
+             parameter_2: {
+             name: slow_period,
+             value: 50
+             },
+             parameter_3: {
+             name: N/A,
+             value: 0
+             },
+             condition: fast SMA crosses below slow SMA
+             }
+
+             position_size: {
+             type: fixed,
+             value: 100
+             }
+
+             stop_loss: {
+             parameter_1: {
+             name: percentage of entry price,
+             value: 2
+             },
+             parameter_2: {
+             name: N/A
+             value: 0
+             },
+             parameter_3: {
+             name: N/A,
+             value: 0
+             },
+             condition: price falls below entry price
+             }
+
+             take_profit: {
+             parameter_1: {
+             name: percentage of entry price,
+             value: 5
+             },
+             parameter_2: {
+             name: N/A
+             value: 0
+             },
+             parameter_3: {
+             name: N/A,
+             value: 0
+             },
+             condition: price goes above entry price             
+             }
+
+             """},
+            {"role": "user", "content": f"Create a JSON representation of this strategy:\n\n{strategy_summary}"}
+        ],
+        response_format={
+            "type": "json_schema",
+            "json_schema": {
+                "name": "strategy_to_json",
+                "strict": True,
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "strategy_name": {
+                            "type": "string"
+                        },
+                        "entry_condition": {
+                            "type": "object",
+                            "properties": {
+                                "indicator": {"type": "string"},
+                                "condition": {"type": "string"},
+                                "parameter_1": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": {"type": "string"},
+                                        "value": {"type": "integer"},
+                                    },
+                                    "required": ["name", "value"],
+                                    "additionalProperties": False
+                                },
+                                "parameter_2": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": {"type": "string"},
+                                        "value": {"type": "integer"},
+                                    },
+                                    "required": ["name", "value"],
+                                    "additionalProperties": False
+                                },
+                                "parameter_3": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": {"type": "string"},
+                                        "value": {"type": "integer"},
+                                    },
+                                    "required": ["name", "value"],
+                                    "additionalProperties": False
+                                },                                
+                            },
+                            "required": ["indicator", "condition", "parameter_1", "parameter_2", "parameter_3"],
+                            "additionalProperties": False
+                        },
+                        "exit_condition": {
+                            "type": "object",
+                            "properties": {
+                                "indicator": {"type": "string"},
+                                "condition": {"type": "string"},
+                                "parameter_1": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": {"type": "string"},
+                                        "value": {"type": "integer"},
+                                    },
+                                    "required": ["name", "value"],
+                                    "additionalProperties": False
+                                },
+                                "parameter_2": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": {"type": "string"},
+                                        "value": {"type": "integer"},
+                                    },
+                                    "required": ["name", "value"],
+                                    "additionalProperties": False
+                                },
+                                "parameter_3": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": {"type": "string"},
+                                        "value": {"type": "integer"},
+                                    },
+                                    "required": ["name", "value"],
+                                    "additionalProperties": False
+                                },   
+                            },
+                            "required": ["indicator", "condition", "parameter_1", "parameter_2", "parameter_3"],
+                            "additionalProperties": False
+                        },
+                        "position_size": {
+                            "type": "object",
+                            "properties": {
+                                "type": {"type": "string"},
+                                "value": {"type": "integer"},
+                            },
+                            "required": ["type", "value"],
+                            "additionalProperties": False
+                        },
+                        "stop_loss": {
+                            "type": "object",
+                            "properties": {
+                                "condition": {"type": "string"},
+                                "parameter_1": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": {"type": "string"},
+                                        "value": {"type": "integer"},
+                                    },
+                                    "required": ["name", "value"],
+                                    "additionalProperties": False
+                                },
+                                "parameter_2": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": {"type": "string"},
+                                        "value": {"type": "integer"},
+                                    },
+                                    "required": ["name", "value"],
+                                    "additionalProperties": False
+                                },
+                                "parameter_3": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": {"type": "string"},
+                                        "value": {"type": "integer"},
+                                    },
+                                    "required": ["name", "value"],
+                                    "additionalProperties": False
+                                },   
+                            },
+                            "required": ["condition", "parameter_1", "parameter_2", "parameter_3"],
+                            "additionalProperties": False
+                        },
+                        "take_profit": {
+                            "type": "object",
+                            "properties": {
+                                "condition": {"type": "string"},
+                                "parameter_1": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": {"type": "string"},
+                                        "value": {"type": "integer"},
+                                    },
+                                    "required": ["name", "value"],
+                                    "additionalProperties": False
+                                },
+                                "parameter_2": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": {"type": "string"},
+                                        "value": {"type": "integer"},
+                                    },
+                                    "required": ["name", "value"],
+                                    "additionalProperties": False
+                                },
+                                "parameter_3": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": {"type": "string"},
+                                        "value": {"type": "integer"},
+                                    },
+                                    "required": ["name", "value"],
+                                    "additionalProperties": False
+                                },   
+                            },
+                            "required": ["condition", "parameter_1", "parameter_2", "parameter_3"],
+                            "additionalProperties": False
+                        },
+                    },
+                    "required": ["strategy_name", "entry_condition", "exit_condition", "position_size", "stop_loss", "take_profit"],
+                    "additionalProperties": False
+                }
+            }
+        }
+    )
+    return response.choices[0].message.content
+
+def get_user_strategies_file():
+    user_id = session.get('user_id', 'default_user')  # You should implement proper user authentication
+    return os.path.join(STRATEGIES_DIR, f"{user_id}_strategies.json")
+
+def load_user_strategies():
+    file_path = get_user_strategies_file()
+    if os.path.exists(file_path):
+        with open(file_path, 'r') as f:
+            return json.load(f)
+    return []
+
+def save_user_strategies(strategies):
+    file_path = get_user_strategies_file()
+    with open(file_path, 'w') as f:
+        json.dump(strategies, f, indent=2)
+
 
 @app.route('/')
 def index():
@@ -158,6 +445,51 @@ def set_backtest_params():
     session['backtest_timeframe'] = timeframe
     
     return jsonify({"status": "success", "message": "Backtest parameters set successfully"})
+
+@app.route('/generate_strategy', methods=['POST'])
+def generate_strategy():
+    chat_history = request.json.get('chat_history')
+    
+    # Step 3: Summarize the strategy
+    strategy_summary = summarize_strategy(chat_history)
+    
+    # Step 4: Generate JSON from the summary
+    strategy_json = generate_strategy_json(strategy_summary)
+    
+    # Store the summary for front-end use
+    session['current_strategy_summary'] = strategy_summary
+    
+    return jsonify({
+        "strategy_summary": strategy_summary,
+        "strategy_json": strategy_json
+    })
+
+@app.route('/get_current_strategy', methods=['GET'])
+def get_current_strategy():
+    return jsonify({
+        "strategy_summary": session.get('current_strategy_summary', "No strategy currently selected.")
+    })
+
+@app.route('/save_strategy', methods=['POST'])
+def save_strategy():
+    new_strategy = request.json
+    strategies = load_user_strategies()
+    strategies.append(new_strategy)
+    save_user_strategies(strategies)
+    return jsonify({"message": "Strategy saved successfully", "strategies": strategies})
+
+@app.route('/get_strategies', methods=['GET'])
+def get_strategies():
+    strategies = load_user_strategies()
+    return jsonify(strategies)
+
+@app.route('/delete_strategy', methods=['POST'])
+def delete_strategy():
+    strategy_name = request.json.get('name')
+    strategies = load_user_strategies()
+    strategies = [s for s in strategies if s['name'] != strategy_name]
+    save_user_strategies(strategies)
+    return jsonify({"message": "Strategy deleted successfully", "strategies": strategies})
 
 if __name__ == '__main__':
     app.run(debug=True)

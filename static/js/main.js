@@ -6,6 +6,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const clearMemoryButton = document.getElementById('clear-memory');
     const instrumentSelect = document.getElementById('instrument-select');
     const timeframeSelect = document.getElementById('timeframe-select');
+    const createStrategyButton = document.getElementById('create-strategy-button');
+    const strategyDisplay = document.getElementById('strategy-display');
+    const jsonDisplay = document.getElementById('json-display');
+    const strategySelector = document.getElementById('strategy-selector');
+    const deleteStrategyButton = document.getElementById('delete-strategy-button');
+
+    let strategies = [];
 
     function updateBacktestingParameters() {
         const instrument = instrumentSelect.value;
@@ -147,6 +154,104 @@ document.addEventListener('DOMContentLoaded', function() {
             addMessage('System', 'An error occurred while clearing the memory.');
         });
     });
+
+    createStrategyButton.addEventListener('click', function() {
+        const chatHistory = Array.from(chatMessages.children).map(msg => msg.textContent).join('\n');
+
+        fetch('/generate_strategy', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({chat_history: chatHistory}),
+        })
+        .then(response => response.json())
+        .then(data => {
+            const newStrategy = {
+                name: `Strategy ${Date.now()}`,  // Use timestamp for unique names
+                summary: data.strategy_summary,
+                json: data.strategy_json
+            };
+
+            fetch('/save_strategy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newStrategy),
+            })
+            .then(response => response.json())
+            .then(result => {
+                updateStrategySelector(result.strategies);
+                strategySelector.value = newStrategy.name;
+                displayStrategy(newStrategy);
+            })
+            .catch(error => console.error('Error saving strategy:', error));
+        })
+        .catch(error => console.error('Error generating strategy:', error));
+    });
+
+    function loadStrategies() {
+        fetch('/get_strategies')
+            .then(response => response.json())
+            .then(strategies => {
+                updateStrategySelector(strategies);
+                if (strategies.length > 0) {
+                    strategySelector.value = strategies[0].name;
+                    displayStrategy(strategies[0]);
+                }
+            })
+            .catch(error => console.error('Error loading strategies:', error));
+    }
+
+    function updateStrategySelector(strategies) {
+        strategySelector.innerHTML = '';
+        strategies.forEach(strategy => {
+            const option = document.createElement('option');
+            option.value = strategy.name;
+            option.textContent = strategy.name;
+            strategySelector.appendChild(option);
+        });
+    }
+
+    function displayStrategy(strategy) {
+        strategyDisplay.textContent = strategy.summary;
+        jsonDisplay.textContent = JSON.stringify(JSON.parse(strategy.json), null, 2);
+    }
+
+    strategySelector.addEventListener('change', function() {
+        fetch('/get_strategies')
+            .then(response => response.json())
+            .then(strategies => {
+                const selectedStrategy = strategies.find(s => s.name === this.value);
+                if (selectedStrategy) {
+                    displayStrategy(selectedStrategy);
+                }
+            })
+            .catch(error => console.error('Error loading strategies:', error));
+    });
+
+    deleteStrategyButton.addEventListener('click', function() {
+        const selectedStrategyName = strategySelector.value;
+        if (selectedStrategyName) {
+            fetch('/delete_strategy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({name: selectedStrategyName}),
+            })
+            .then(response => response.json())
+            .then(result => {
+                updateStrategySelector(result.strategies);
+                if (result.strategies.length > 0) {
+                    strategySelector.value = result.strategies[0].name;
+                    displayStrategy(result.strategies[0]);
+                } else {
+                    strategyDisplay.textContent = '';
+                    jsonDisplay.textContent = '';
+                }
+            })
+            .catch(error => console.error('Error deleting strategy:', error));
+        }
+    });
+
+    // Load strategies when the page loads
+    loadStrategies();
 
     // Initialize the textarea height
     adjustTextareaHeight();

@@ -44,24 +44,35 @@
         <!-- Create Clear Memory Button -->
         <button id="clear-memory" class="btn btn-warning mb-2">Clear Memory</button>
 
-        <!-- Create Strategy Button -->
-        <button class="btn btn-success mb-3 w-100" onclick="createStrategy()">Create Strategy</button>
-
-        <!-- Strategy Selector -->
+        <!-- Strategy creation and display -->
         <div class="card mb-3">
             <div class="card-body">
-                <h5 class="card-title">Strategy Selector</h5>
-                <select id="strategy-select" class="form-select mb-2">
-                    <option selected>Select Strategy</option>
-                    <option value="strategy1">Strategy 1</option>
-                    <option value="strategy2">Strategy 2</option>
-                </select>
-                <button class="btn btn-danger btn-sm" onclick="deleteStrategy()">Delete Strategy</button>
+                <h5 class="card-title">Strategy</h5>
+                <button id="create-strategy-button" class="btn btn-primary mb-3">Create Strategy</button>
+                <div class="mb-3">
+                    <h6>Strategy Summary:</h6>
+                    <div id="strategy-display" class="border p-2" style="min-height: 100px;"></div>
+                </div>
+                <div>
+                    <h6>Strategy JSON:</h6>
+                    <pre id="json-display" class="border p-2" style="max-height: 300px; overflow-y: auto;"></pre>
+                </div>
             </div>
         </div>
 
-        <!-- Backtest Button -->
-        <button class="btn btn-primary mb-3 w-100" onclick="startBacktest()">Backtest!</button>
+        <!-- Strategy selector -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Strategy Selector</h5>
+                <select id="strategy-selector" class="form-select mb-2">
+                    <!-- Options will be dynamically added here -->
+                </select>
+                <button id="delete-strategy-button" class="btn btn-danger">Delete Strategy</button>
+            </div>
+        </div>
+
+        <!-- Backtest button -->
+        <button id="run-backtest-button" class="btn btn-success mb-3">Run Backtest</button>
     </div>
 
     <!-- Right column: Output and results -->
