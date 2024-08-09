@@ -18,9 +18,44 @@ document.addEventListener('DOMContentLoaded', function() {
         gfm: true,    // Use GitHub Flavored Markdown
     });
 
+    let currentMessageBuffer = '';
+    let currentMessageElement = null;
+
+    function startNewMessage(sender) {
+        currentMessageBuffer = '';
+        currentMessageElement = document.createElement('div');
+        currentMessageElement.innerHTML = `<strong>${sender}:</strong> <span class="message-content"></span>`;
+        chatMessages.appendChild(currentMessageElement);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    
+    function appendToMessage(content) {
+        currentMessageBuffer += content;
+        currentMessageElement.querySelector('.message-content').innerHTML = currentMessageBuffer.replace(/\n/g, '<br>');
+    }
+    
+    function finalizeMessage() {
+        const parsedContent = parseAndSanitizeMarkdown(currentMessageBuffer);
+        currentMessageElement.querySelector('.message-content').innerHTML = parsedContent;
+        currentMessageBuffer = '';
+        currentMessageElement = null;
+    }
+
     function parseAndSanitizeMarkdown(content) {
-        const rawHtml = marked.parse(content);
-        return DOMPurify.sanitize(rawHtml);
+        // Ensure there's a line break before headers if not already present
+        content = content.replace(/(?<!\n)^(#{1,6}\s)/gm, '\n$1');
+        
+        const rawHtml = marked.parse(content, {
+            breaks: true,
+            gfm: true,
+            headerIds: false // Disable automatic ID generation for headers
+        });
+        return DOMPurify.sanitize(rawHtml, {
+            ALLOW_UNKNOWN_PROTOCOLS: true,
+            ADD_ATTR: ['target'],
+            FORBID_TAGS: ['style', 'script'],
+            FORBID_ATTR: ['style']
+        });
     }
 
     function updateBacktestingParameters() {
@@ -88,19 +123,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Add a message to the chat interface
     function addMessage(sender, message) {
-        const parsedContent = parseAndSanitizeMarkdown(message);
-        const messageElement = document.createElement('div');
-        messageElement.innerHTML = `<strong>${sender}:</strong> ${parsedContent}`;
-        chatMessages.appendChild(messageElement);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
+        startNewMessage(sender);
+        appendToMessage(message);
+        finalizeMessage();
     }
 
     // Send message to the server and handle the streaming response
     function sendMessage(message) {
-        // Add an empty message for the AI's response
-        addMessage('AI', '');
-        const aiMessageElement = chatMessages.lastElementChild;
-
         fetch('/chat', {
             method: 'POST',
             headers: {
@@ -112,10 +141,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             
-            // Function to recursively read the stream
+            startNewMessage('AI');  // Start a new AI message
+    
             function readStream() {
                 reader.read().then(({ done, value }) => {
                     if (done) {
+                        finalizeMessage();  // Finalize the message when the stream is done
                         return;
                     }
                     const chunk = decoder.decode(value);
@@ -124,16 +155,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (line.startsWith('data: ')) {
                             const data = line.slice(6);
                             if (data === '[DONE]') {
-                                return;
+                                finalizeMessage();  // Finalize the message when '[DONE]' is received
+                            } else {
+                                appendToMessage(data);  // Append each chunk of data
                             }
-                            // Append the received data to the AI's message
-                            aiMessageElement.innerHTML += data;
-                            // Scroll to the bottom as new content arrives
-                            chatMessages.scrollTop = chatMessages.scrollHeight;
                         }
                     });
-                    // Continue reading the stream
-                    readStream();
+                    readStream();  // Continue reading the stream
                 });
             }
             

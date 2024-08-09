@@ -67,23 +67,62 @@ code {
     padding: 0.2em 0.4em;
 }
 
-#chat-messages p {
-    margin-bottom: 0.5em;
+#chat-messages .message-content {
+    white-space: pre-wrap;  /* Preserve line breaks */
+    word-wrap: break-word;  /* Allow long words to break */
 }
 
-#chat-messages ul, #chat-messages ol {
-    margin-left: 1.5em;
+#chat-messages .message-content p {
+    margin: 0 0 10px 0;  /* Add some bottom margin to paragraphs */
 }
 
-#chat-messages code {
+#chat-messages .message-content br {
+    display: block;  /* Ensure line breaks are displayed */
+    content: "";
+    margin-top: 5px;  /* Add some space above line breaks */
+}
+
+#chat-messages .message-content strong {
+    font-weight: bold;
+}
+
+#chat-messages .message-content em {
+    font-style: italic;
+}
+
+#chat-messages .message-content ul, 
+#chat-messages .message-content ol {
+    margin: 5px 0 5px 20px;  /* Add left margin for lists */
+}
+
+#chat-messages .message-content code {
     background-color: #f0f0f0;
     padding: 2px 4px;
-    border-radius: 4px;
+    border-radius: 3px;
+    font-family: monospace;
 }
 
-#chat-messages pre {
+#chat-messages .message-content pre {
     background-color: #f0f0f0;
     padding: 10px;
-    border-radius: 4px;
-    overflow-x: auto;
+    border-radius: 3px;
+    white-space: pre-wrap;
+    font-family: monospace;
 }
+
+#chat-messages .message-content h1,
+#chat-messages .message-content h2,
+#chat-messages .message-content h3,
+#chat-messages .message-content h4,
+#chat-messages .message-content h5,
+#chat-messages .message-content h6 {
+    margin: 15px 0 10px 0;
+    line-height: 1.2;
+}
+
+#chat-messages .message-content h1 { font-size: 2em; }
+#chat-messages .message-content h2 { font-size: 1.5em; }
+#chat-messages .message-content h3 { font-size: 1.3em; }
+#chat-messages .message-content h4 { font-size: 1.2em; }
+#chat-messages .message-content h5 { font-size: 1.1em; }
+#chat-messages .message-content h6 { font-size: 1em; }
